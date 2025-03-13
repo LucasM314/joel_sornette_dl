@@ -12,22 +12,22 @@ def book_str_to_int(book):
 def chapter_int_to_str(chapter):
     return f"0{chapter}" if chapter<10 else str(chapter)
 
-"""
-Trouve l'url du fichier pdf correspondant à la dernière version d'un chapitre.
+def find_latest_version_url(book: str, chapter: int) -> tuple[bool, str]:
+    """
+    Trouve l'url du fichier pdf correspondant à la dernière version d'un chapitre.
 
-Fonctionnement : Pour accéder au fichier pdf souhaité, l'utilisateur du site se rend sur la page de présentation et clique
-sur un hyperlien "TELECHARGER". La fonction mimique ce comportement : elle utilise le package requests pour récupérer le
-contenu HTML de la page de présentation du chapitre passé en paramètre, et trouve le lien voulu à l'aide du package BeautifulSoup.
+    Fonctionnement : Pour accéder au fichier pdf souhaité, l'utilisateur du site se rend sur la page de présentation et clique
+    sur un hyperlien "TELECHARGER". La fonction mimique ce comportement : elle utilise le package requests pour récupérer le
+    contenu HTML de la page de présentation du chapitre passé en paramètre, et trouve le lien voulu à l'aide du package BeautifulSoup.
 
-Renvoie : un couple (success, url)
-"""
-def find_latest_version_url(book: str, chapter: int) -> (bool, str):
+    Renvoie : un couple (success, url)
+    """
     book_int = book_str_to_int(book)
     chapter_str = chapter_int_to_str(chapter)
     url = f"https://www.joelsornette.fr/page{book_int}{chapter_str}.html"
     prefix = "ressources/textes/"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
 
         if response.status_code != 200:  # Requête échouée
             return False, response.status_code
@@ -42,14 +42,14 @@ def find_latest_version_url(book: str, chapter: int) -> (bool, str):
     except requests.exceptions.RequestException as e:
         return False, e
 
-"""
-Télécharge un fichier pdf à partir de son url et l'enregistre au chemin spécifié (file_path)
-
-Renvoie : success
-"""
 def download_pdf(url: str, file_path: str) -> bool:
+    """
+    Télécharge un fichier pdf à partir de son url et l'enregistre au chemin spécifié (file_path)
+
+    Renvoie : success
+    """
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
 
         if response.status_code != 200:  # Requête échouée
             return False
@@ -61,12 +61,12 @@ def download_pdf(url: str, file_path: str) -> bool:
     except:
         return False
 
-"""
-Trouve le titre d'un livre ou d'un chapitre (lorsque ce dernier est précisé en paramètre)
+def find_title(book: str, chapter: int = -1) -> tuple[bool, str]:
+    """
+    Trouve le titre d'un livre ou d'un chapitre (lorsque ce dernier est précisé en paramètre)
 
-Renvoie : un couple (success, title)
-"""
-def find_title(book: str, chapter: int = -1) -> (bool, str):
+    Renvoie : un couple (success, title)
+    """
     book_int = book_str_to_int(book)
     chapter_str = "" if chapter==-1 else chapter_int_to_str(chapter)
     url = f"https://www.joelsornette.fr/page{book_int}{chapter_str}.html"
@@ -102,7 +102,9 @@ selection_complete = {'A': list(range(1, 11)),
 Télécharge les chapitres spécifiés dans le paramètre selection, et les enregistre suivant les livres auxquels
 ils appartiennent au chemin indiqué par le paramètre folder_path.
 """
-def download_lessons(selection=selection_complete, folder_path=os.getcwd()):
+def download_lessons(selection=None, folder_path=os.getcwd()):
+    if selection is None:
+        selection = selection_complete
     os.makedirs(folder_path, exist_ok=True)
     for book in selection.keys():
         # Récupère le nom du livre
@@ -129,7 +131,11 @@ def download_lessons(selection=selection_complete, folder_path=os.getcwd()):
             success_chapter_title, chapter_title = find_title(book, chapter)
             if not success_chapter_title:
                 print(f"Erreur lors de l'obtention du titre du chapitre {chapter} livre {book}")
-            chapter_title = chapter_title.replace(':', '-').replace(" ?", "").replace("/", ", ")
+            # Dans certains cas, le titre du livre est de la forme "A blabla" au lieu de "A : blabla".
+            chapter_title = chapter_title.replace(': ', '')
+            chapter_id, chapter_name = chapter_title.split(' ', 1)
+            chapter_title = chapter_id + ' - ' + chapter_name[0].upper() + chapter_name[1:]
+            chapter_title = chapter_title.replace(" ?", "").replace("/", ", ")
             chapter_path = os.path.join(book_path, f"{chapter_title}.pdf")
 
             success_download = download_pdf(url, chapter_path)
