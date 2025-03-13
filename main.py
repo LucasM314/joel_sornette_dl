@@ -98,11 +98,11 @@ selection_complete = {'A': list(range(1, 11)),
                       'D': list(range(1, 13)),
                       'E': list(range(1, 12))}
 
-"""
-Télécharge les chapitres spécifiés dans le paramètre selection, et les enregistre suivant les livres auxquels
-ils appartiennent au chemin indiqué par le paramètre folder_path.
-"""
 def download_lessons(selection=None, folder_path=os.getcwd()):
+    """
+    Télécharge les chapitres spécifiés dans le paramètre selection, et les enregistre suivant
+    les livres auxquels ils appartiennent au chemin indiqué par le paramètre folder_path.
+    """
     if selection is None:
         selection = selection_complete
     os.makedirs(folder_path, exist_ok=True)
