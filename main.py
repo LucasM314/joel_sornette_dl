@@ -1,7 +1,7 @@
-import requests
-from bs4 import BeautifulSoup
 import os
 import shutil
+import requests
+from bs4 import BeautifulSoup
 
 
 # Convertit la lettre du livre en son numéro correspondant
@@ -71,7 +71,7 @@ def find_title(book: str, chapter: int = -1) -> tuple[bool, str]:
     chapter_str = "" if chapter==-1 else chapter_int_to_str(chapter)
     url = f"https://www.joelsornette.fr/page{book_int}{chapter_str}.html"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
 
         if response.status_code != 200:  # Requête échouée
             return False, response.status_code
